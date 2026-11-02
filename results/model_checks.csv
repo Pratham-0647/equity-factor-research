@@ -1,0 +1,7 @@
+check,value,note
+shuffled_label_lgbm_oos_ic_mean,-0.0003,6 seeds; labels permuted within date in training only
+shuffled_label_lgbm_oos_ic_sd,0.0098,null spread of OOS IC for a no-information model
+no_purge_lgbm_oos_ic,0.0376,vs 0.0377 purged: monthly samples overlap only one month per fold
+no_purge_linear_oos_ic,0.0459,vs 0.0485 purged
+inner_fold_overlap_violations,0,purged k-fold on 2016-2021 data
+inner_fold_embargo_violations,0,5-day embargo
