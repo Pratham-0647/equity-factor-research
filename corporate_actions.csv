@@ -1,0 +1,8 @@
+ticker,date,action,factor,verified,note
+MOTILALOFS,2024-01-01,adjust,0.25,yes,3:1 bonus; observed close ratio 0.2539 and 5.5x volume on ex-date
+TRENT,2026-01-01,adjust,0.666667,no,"ratio 0.6695 ~ 2/3 (1:2 bonus pattern), 2x volume; after analyst knowledge, could not verify (Yahoo blocked)"
+ADANIENT,2015-06-03,adjust,observed,yes,demerger (Adani Transmission / mining) ex-date; day's return set to 0
+MFSL,2016-01-27,adjust,observed,yes,Max India three-way demerger ex-date; day's return set to 0
+TMPV,2025-10-14,adjust,observed,yes,Tata Motors commercial-vehicle demerger record date; day's return set to 0
+VEDL,2026-04-30,adjust,observed,no,"ratio 0.351 with 2x volume, consistent with Vedanta demerger; could not verify (Yahoo blocked)"
+PATANJALI,2020-01-27,truncate,,yes,Ruchi Soya relisted after insolvency resolution with ~99% capital reduction (1984x volume); earlier history is a different security
