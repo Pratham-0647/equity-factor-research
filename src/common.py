@@ -93,7 +93,7 @@ def style():
     plt.rcParams.update({
         "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
         "axes.edgecolor": GRID, "axes.linewidth": 0.8, "axes.labelcolor": INK_2,
-        "axes.titlecolor": INK, "axes.titlesize": 11, "axes.titleweight": "semibold",
+        "axes.titlecolor": INK, "axes.titlesize": 11, "axes.titleweight": "bold",
         "axes.labelsize": 9, "xtick.color": INK_2, "ytick.color": INK_2,
         "xtick.labelsize": 8, "ytick.labelsize": 8, "axes.grid": True,
         "grid.color": GRID, "grid.linewidth": 0.6, "grid.linestyle": "-",
