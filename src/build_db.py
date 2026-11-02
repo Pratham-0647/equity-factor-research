@@ -5,14 +5,48 @@ Tables
 prices(date, ticker, open, high, low, close, volume)   -- long format, adjusted OHLC
 sectors(ticker, sector)
 trading_days(date, day_idx)                            -- dense trading-day index
+corporate_actions(...)                                 -- manual fixes applied (see below)
+
+Corporate actions: yfinance leaves some bonuses and demergers unadjusted, which
+shows up as a one-day -35% to -75% "return" that no holder experienced.
+corporate_actions.csv lists events reviewed by hand (|return| > 25% on a day the
+index moved < 3%). For action=adjust, all OHLC before the ex-date is multiplied
+by `factor` and volume divided by it (traded value unchanged); factor=observed
+uses that day's close ratio, i.e. sets the ex-date return to zero, a standard
+approximation for demergers. action=truncate drops all history before the date.
 """
 import sqlite3
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 DB = ROOT / "data" / "factors.db"
+
+
+def apply_corporate_actions(prices, ca):
+    prices = prices.sort_values(["ticker", "date"]).reset_index(drop=True)
+    ca = ca.copy()
+    applied = []
+    for i, a in ca.iterrows():
+        tk = prices["ticker"] == a.ticker
+        before = tk & (prices["date"] < a.date)
+        on = tk & (prices["date"] == a.date)
+        if not on.any() or not before.any():
+            raise ValueError(f"corporate action {a.ticker} {a.date}: no price on/before date")
+        if a.action == "truncate":
+            prices = prices[~before].reset_index(drop=True)
+            applied.append(np.nan)
+            continue
+        prev_close = prices.loc[before, "close"].iloc[-1]
+        f = (prices.loc[on, "close"].iloc[0] / prev_close
+             if str(a.factor) == "observed" else float(a.factor))
+        prices.loc[before, ["open", "high", "low", "close"]] *= f
+        prices.loc[before, "volume"] /= f
+        applied.append(f)
+    ca["factor_applied"] = applied
+    return prices, ca
 
 
 def main():
@@ -33,6 +67,7 @@ def main():
     prices = prices[["date", "ticker", "open", "high", "low", "close", "volume"]]
     prices["date"] = prices["date"].dt.strftime("%Y-%m-%d")
     prices["volume"] = prices["volume"].fillna(0)
+    prices, ca = apply_corporate_actions(prices, pd.read_csv(ROOT / "corporate_actions.csv"))
 
     idx = px["^NSEI"]["Close"].dropna()
     index_df = pd.DataFrame({"date": idx.index.strftime("%Y-%m-%d"), "close": idx.values})
@@ -49,6 +84,7 @@ def main():
     index_df.to_sql("nifty_index", con, index=False)
     sec.to_sql("sectors", con, index=False)
     trading_days.to_sql("trading_days", con, index=False)
+    ca.to_sql("corporate_actions", con, index=False)
     con.execute("CREATE INDEX ix_prices ON prices(ticker, date)")
     con.execute("CREATE UNIQUE INDEX ix_days ON trading_days(date)")
     con.commit()
