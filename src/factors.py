@@ -83,23 +83,25 @@ def rolling_regression(r, m, window):
     return beta.where(ok), resid_std.where(ok)
 
 
-def compute_factor_panels(close, mkt):
+def compute_factor_panels(close, mkt, mom_lookback=252, skip=21, vol_window=60):
     """Six price-based factors as date x ticker panels. Row t uses rows <= t only.
 
     Liquidity comes from the SQL universe table (see sample_at_rebalance).
+    mom_lookback / skip / vol_window default to the specification above and
+    are varied only in the parameter-sensitivity analysis (Phase 7).
     """
     ret = close.pct_change(fill_method=None)
     mret = mkt.pct_change(fill_method=None)
     lvl = close.ffill(limit=FFILL_LIMIT)
 
     out = {}
-    out["mom_12_1"] = lvl.shift(21) / lvl.shift(252) - 1
+    out["mom_12_1"] = lvl.shift(skip) / lvl.shift(mom_lookback) - 1
     out["strev"] = -(close / lvl.shift(21) - 1)
 
-    vol60 = ret.rolling(60, min_periods=_minp(60)).std() * ANN
+    vol60 = ret.rolling(vol_window, min_periods=_minp(vol_window)).std() * ANN
     out["lowvol"] = 1.0 / vol60.where(vol60 > 0)
 
-    _, resid60 = rolling_regression(ret, mret, 60)
+    _, resid60 = rolling_regression(ret, mret, vol_window)
     out["idio_vol"] = resid60 * ANN
 
     hi = close.rolling(252, min_periods=_minp(252)).max()
