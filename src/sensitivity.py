@@ -78,7 +78,7 @@ def grid_b():
 
 def heat(ax, m, xlabels, ylabels, xlab, ylab, title, mark=None, vmax=None):
     v = vmax or np.nanmax(np.abs(m.values))
-    im = ax.imshow(m.values, cmap=diverging_cmap(), vmin=-v, vmax=v, origin="lower")
+    im = ax.imshow(m.values, cmap=diverging_cmap().reversed(), vmin=-v, vmax=v, origin="lower")
     ax.set_xticks(range(len(xlabels)), xlabels)
     ax.set_yticks(range(len(ylabels)), ylabels)
     ax.set_xlabel(xlab); ax.set_ylabel(ylab); ax.set_title(title); ax.grid(False)

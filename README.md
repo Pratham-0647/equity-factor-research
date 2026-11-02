@@ -12,11 +12,12 @@ transaction costs and turnover.
 
 | | |
 |---|---|
-| Strongest factors (monthly rank IC) | 12-1 momentum **0.033** (t 3.1), liquidity **−0.034** (t −3.8, illiquid outperform) |
+| Strongest factors (monthly rank IC) | 12-1 momentum **0.034** (t 3.1), liquidity **−0.034** (t −3.8, illiquid outperform) |
 | Contrary to the literature | low-volatility and idiosyncratic volatility had the "wrong" sign in 2016–2026 |
 | LightGBM, out-of-sample 2019–2026 | IC **0.038** (t 3.7) vs 0.025 for an equal-weight composite; the difference is not significant (t 0.9). OLS does better (0.049) |
-| Long-short decile book (LightGBM) | gross CAGR 13.3% (Sharpe 0.98) → **net 6.3% (Sharpe 0.51, Sortino 0.73, max DD −34%)** at 20 bps |
+| Long-short decile book (LightGBM) | gross CAGR 13.2% (Sharpe 0.98) → **net 6.3% (Sharpe 0.51, Sortino 0.73, max DD −34%)** at 20 bps |
 | Cost breakeven | 39 bps (LightGBM), 56 bps (linear); turnover 2.6× NAV per monthly rebalance |
+| Parameter sensitivity | LightGBM net Sharpe positive in **16/16** momentum × volatility lookback cells (0.22–1.29); the default sits at 0.51 |
 | Multiple testing | 52 strategy variants scored; deflated-Sharpe probability 0.19 → **not significant after correction** |
 | Most robust result | LightGBM top decile beat the equal-weight universe by 9.1%/yr (Sharpe 1.10 on the difference) |
 
@@ -44,7 +45,7 @@ prices.parquet, sectors.csv, corporate_actions.csv
 
 ```bash
 pip install -r requirements.txt
-python src/run_all.py      # ~20 min, most of it the sensitivity grid
+python src/run_all.py      # ~30 min, most of it the 16-cell sensitivity grid
 python -m pytest tests     # look-ahead, purging, engine and metric tests
 ```
 
