@@ -45,7 +45,7 @@ prices.parquet, sectors.csv, corporate_actions.csv
 
 ```bash
 pip install -r requirements.txt
-python src/run_all.py      # ~30 min, most of it the 16-cell sensitivity grid
+python src/run_all.py      # ~15 min, most of it the 16-cell sensitivity grid
 python -m pytest tests     # look-ahead, purging, engine and metric tests
 ```
 
