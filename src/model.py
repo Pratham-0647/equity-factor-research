@@ -111,10 +111,12 @@ def choose_params(train):
     return GRID[best], scores
 
 
-def load_panel(con):
-    z = pd.read_sql("SELECT * FROM factors_z", con)
+def load_panel(con, z=None, close=None):
+    if z is None:
+        z = pd.read_sql("SELECT * FROM factors_z", con)
     days = pd.read_sql("SELECT date AS rebal_date, day_idx FROM trading_days", con)
-    close = load_close(con)
+    if close is None:
+        close = load_close(con)
     fwd = forward_returns(close, sorted(z.rebal_date.unique()), H, lag=LAG)
     df = z.merge(days, on="rebal_date").merge(fwd, on=["rebal_date", "ticker"], how="left")
     df["label"] = df.groupby("rebal_date")["fwd"].rank(pct=True)
