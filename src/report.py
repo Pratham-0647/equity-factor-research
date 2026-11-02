@@ -23,7 +23,7 @@ OUT = ROOT / "report" / "equity_factor_research.pdf"
 FONT_DIR = "/usr/share/fonts/truetype/dejavu/"
 pdfmetrics.registerFont(TTFont("DV", FONT_DIR + "DejaVuSans.ttf"))
 pdfmetrics.registerFont(TTFont("DV-B", FONT_DIR + "DejaVuSans-Bold.ttf"))
-pdfmetrics.registerFont(TTFont("DV-I", FONT_DIR + "DejaVuSans-Oblique.ttf"))
+pdfmetrics.registerFont(TTFont("DV-I", FONT_DIR + "DejaVuSans.ttf"))  # no oblique face installed
 pdfmetrics.registerFontFamily("DV", normal="DV", bold="DV-B", italic="DV-I", boldItalic="DV-B")
 
 INK, INK2, GRID, ACCENT = colors.HexColor("#0b0b0b"), colors.HexColor("#52514e"), colors.HexColor("#e1e0d9"), colors.HexColor("#2a78d6")
@@ -49,12 +49,20 @@ def bullets(items):
 
 
 def table(df, col_w=None, fs=7.5):
-    data = [list(df.columns)] + df.astype(str).values.tolist()
+    """Table with wrapped cells; text columns left-aligned, numeric right-aligned."""
+    n = len(df.columns)
+    if col_w is None:
+        first = 4.2 * cm
+        col_w = [first] + [(17 * cm - first) / (n - 1)] * (n - 1)
+    is_text = [df[c].astype(str).str.count(r"[A-Za-z]").max() > 4 for c in df.columns]
+    hs = [ParagraphStyle(f"h{i}", parent=BODY, fontName="DV-B", fontSize=fs, leading=fs + 2,
+                         alignment=0 if is_text[i] else 2, spaceAfter=0) for i in range(n)]
+    cs = [ParagraphStyle(f"c{i}", parent=hs[i], fontName="DV") for i in range(n)]
+    data = [[Paragraph(str(c), hs[i]) for i, c in enumerate(df.columns)]]
+    data += [[Paragraph(str(v), cs[i]) for i, v in enumerate(row)] for row in df.astype(str).values]
     t = Table(data, colWidths=col_w, repeatRows=1)
     t.setStyle(TableStyle([
-        ("FONT", (0, 0), (-1, 0), "DV-B", fs), ("FONT", (0, 1), (-1, -1), "DV", fs),
-        ("TEXTCOLOR", (0, 0), (-1, -1), INK), ("LINEBELOW", (0, 0), (-1, 0), 0.8, INK2),
-        ("LINEBELOW", (0, 1), (-1, -1), 0.3, GRID), ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.8, INK2), ("LINEBELOW", (0, 1), (-1, -1), 0.3, GRID),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 2.5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5)]))
     return t
@@ -86,9 +94,9 @@ def main():
     decay = R("ic_decay.csv", index_col="factor")
     oos = R("model_oos.csv", index_col="model")
     folds = R("model_folds.csv")
-    mchk = R("model_checks.csv", index_col="check")["value"]
+    mchk = pd.to_numeric(R("model_checks.csv", index_col="check")["value"], errors="coerce")
     bt = R("bt_summary.csv", index_col="variant")
-    bchk = R("bt_checks.csv", index_col="check")["value"]
+    bchk = pd.to_numeric(R("bt_checks.csv", index_col="check")["value"], errors="coerce")
     risk = R("risk_metrics.csv", index_col="variant")
     dsr = R("deflated_sharpe.csv", index_col="variant")
     variants = R("variants.csv")
@@ -166,7 +174,7 @@ def main():
         f"({', '.join(ca.ticker)}). {(ca.verified=='no').sum()} of these could not be verified against an "
         f"official source. Genuine crashes (Yes Bank 2020, Adani 2023) were left in.", BODY))
 
-    s.append(Paragraph("2. Factors and cross-sectional processing", H1))
+    sec2 = Paragraph("2. Factors and cross-sectional processing", H1)
     ftab = pd.DataFrame([
         ["mom_12_1", "close[t−21] / close[t−252] − 1", "+"],
         ["strev", "−(21-day return)", "+"],
@@ -175,7 +183,7 @@ def main():
         ["liquidity", "log 60-day median traded value (from the SQL universe)", "−"],
         ["high_52w", "close / 252-day max close", "+"],
         ["beta", "252-day regression slope on Nifty 50", "−"]], columns=["Factor", "Definition (trading days)", "Prior sign"])
-    s.append(table(ftab, [2.5 * cm, 11 * cm, 2 * cm]))
+    s.append(KeepTogether([sec2, table(ftab, [2.5 * cm, 12.5 * cm, 2 * cm])]))
     s.append(Spacer(1, 4))
     s.append(Paragraph(
         "All factors are trailing statistics ending at t; returns are never forward-filled and each window needs 80% "
@@ -243,7 +251,6 @@ def main():
         f"just one month overlaps each boundary. Purging would matter much more with daily samples; it is implemented "
         f"and unit-tested regardless.", BODY))
 
-    s.append(PageBreak())
     s.append(Paragraph("5. Portfolio backtest", H1))
     s.append(Paragraph(
         "Signals formed at close t are traded at close t+1; positions then drift with prices until the next "
@@ -256,11 +263,11 @@ def main():
     names = ["LightGBM L/S", "Linear L/S", "EW composite L/S", "EW composite L/S, weekly",
              "LightGBM L/S, inverse-vol", "LightGBM long-only", "Universe EW (benchmark)"]
     btab = pd.DataFrame({"Strategy": names, "CAGR gross": btab.cagr_gross.map(pct), "CAGR net": btab.cagr_net.map(pct),
-                         "Sharpe net": btab.sharpe_net.map(f), "Turnover / rebal": btab.turnover_per_rebal.map(lambda x: f"{x:.2f}x"),
-                         "Cost drag / yr": btab.cost_drag_annual.map(pct),
-                         "Breakeven": btab.breakeven_cost_bps.map(lambda x: "" if pd.isna(x) else ("n/a" if np.isinf(x) else f"{x:.0f} bps"))})
-    s.append(table(btab, [5 * cm, 1.9 * cm, 1.8 * cm, 1.8 * cm, 2.3 * cm, 2.1 * cm, 1.9 * cm]))
-    s.append(caption("Net of 20 bps. Long-only Sharpe uses excess return over 6% (approximate 91-day T-bill); long-short is self-financing."))
+                         "Sharpe net": btab.sharpe_net.map(f), "Turnover": btab.turnover_per_rebal.map(lambda x: f"{x:.2f}x"),
+                         "Cost/yr": btab.cost_drag_annual.map(pct),
+                         "B/E cost": btab.breakeven_cost_bps.map(lambda x: "" if pd.isna(x) else ("n/a" if np.isinf(x) else f"{x:.0f} bps"))})
+    s.append(table(btab, [5 * cm, 2 * cm, 2 * cm, 2 * cm, 2 * cm, 2 * cm, 2 * cm]))
+    s.append(caption("Turnover = one-way traded notional per rebalance as a multiple of NAV. Net of 20 bps. Long-only Sharpe uses excess return over 6% (approximate 91-day T-bill); long-short is self-financing."))
     s.append(Spacer(1, 4))
     s.append(fig("cost_sensitivity.png", 14))
     s.append(Paragraph(
@@ -287,7 +294,7 @@ def main():
                          "Calmar": rk.calmar.map(f), "Hit /mo": rk.hit_rate_monthly.map(lambda x: pct(x, 0)),
                          "Mkt beta": rk.market_beta.map(f),
                          "beta t": rk.beta_t.map(lambda x: "" if pd.isna(x) else f"{x:.1f}")})
-    s.append(table(rtab, [4.2 * cm] + [1.45 * cm] * 9))
+    s.append(table(rtab, [4.0 * cm] + [1.44 * cm] * 9, fs=7))
     s.append(caption("Sortino divides mean excess return by downside deviation only. Market beta: daily OLS on Nifty 50 returns, Newey-West (5 lags) t-stat."))
     s.append(Paragraph(
         f"<b>Not market-neutral.</b> The dollar-neutral L/S book has residual beta {f(hr.market_beta)} "
@@ -304,8 +311,8 @@ def main():
         f"(range {f(sens_a.lgbm_sharpe_net.min())} to {f(sens_a.lgbm_sharpe_net.max())}; default cell "
         f"{f(default_cell.lgbm_sharpe_net)}); the linear model ranges {f(sens_a.linear_sharpe_net.min())} to "
         f"{f(sens_a.linear_sharpe_net.max())}. In portfolio construction, concentration helps: the 5% tails earn "
-        f"Sharpe {f(sens_b[(sens_b.quantile==0.05)&(sens_b.cost_bps==20)].sharpe_net.iloc[0])} at 20 bps against "
-        f"{f(sens_b[(sens_b.quantile==0.2)&(sens_b.cost_bps==20)].sharpe_net.iloc[0])} for 20% tails, consistent with the "
+        f"Sharpe {f(sens_b[(sens_b["quantile"]==0.05)&(sens_b.cost_bps==20)].sharpe_net.iloc[0])} at 20 bps against "
+        f"{f(sens_b[(sens_b["quantile"]==0.2)&(sens_b.cost_bps==20)].sharpe_net.iloc[0])} for 20% tails, consistent with the "
         f"signal living in the extremes.", BODY))
     s.append(fig("sensitivity_lookback.png", 15))
     s.append(fig("sensitivity_portfolio.png", 8))
@@ -313,7 +320,7 @@ def main():
     s.append(Paragraph("Multiple testing", H2))
     vt = variants.copy()
     vt.columns = ["Phase", "What was tried", "Count", "Note"]
-    s.append(table(vt, [1.6 * cm, 6.2 * cm, 1.3 * cm, 7.4 * cm]))
+    s.append(table(vt, [1.6 * cm, 6.4 * cm, 1.4 * cm, 7.6 * cm]))
     s.append(Spacer(1, 4))
     s.append(Paragraph(
         f"<b>{int(variants['count'].sum())} configurations were evaluated, {int(dsr.loc[H,'n_strategy_variants'])} of them "
@@ -344,7 +351,6 @@ def main():
         "Regime analysis of the volatility factors and a combined long-leg strategy, the most robust result here.",
     ])
 
-    s.append(PageBreak())
     s.append(Paragraph("Appendix: reproducibility", H1))
     s.append(Paragraph(
         "Pipeline (each step reads only what earlier steps wrote): <font face='DV'>build_db.py → build_universe.py "
