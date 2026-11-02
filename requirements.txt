@@ -5,3 +5,4 @@ scipy
 statsmodels
 lightgbm
 matplotlib
+pytest
