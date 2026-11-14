@@ -1,0 +1,9 @@
+phase,what,count,note
+Phase 4,factor x horizon IC evaluations,28,"7 factors x {5,10,21,63}d"
+Phase 4,raw vs sector-neutral IC,7,diagnostic
+Phase 5,LightGBM hyperparameter configs (inner CV only),8,"chosen on training folds, never on OOS"
+Phase 5,OOS signal models,5,"lgbm, linear, ew_prior, ew_ic, best_1"
+Phase 6,backtest variants,15,"3 signals x L/S,L/O x EW,vol + 2 weekly + universe"
+Phase 6,cost levels in sweep,21,"sensitivity, not selection"
+Phase 7,lookback grid cells (full refit),16,momentum 4 x vol window 4
+Phase 7,portfolio grid cells,16,quantile 4 x cost 4

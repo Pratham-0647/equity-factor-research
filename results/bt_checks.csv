@@ -1,0 +1,10 @@
+check,value,note
+corr_bt_period_return_vs_d10_d1_spread,0.982,lgbm L/S gross; mean 1.09%/period vs 1.18% spread (drift between rebalances)
+lgbm_ls_gross_sharpe_entry_lag0,0.987,same-close execution (optimistic)
+lgbm_ls_gross_sharpe_entry_lag1,0.980,used
+lgbm_ls_gross_sharpe_entry_lag2,0.936,one extra day of delay
+ls_net_exposure_max_abs,0.0,dollar-neutral each rebalance; gross exactly 2.0
+names_per_leg,16-19,top/bottom 10% of 160-195 names
+random_signal_ls_gross_sharpe_mean,0.10,20 random-score books
+random_signal_ls_gross_sharpe_sd,0.38,
+random_signal_ls_gross_sharpe_max,0.83,lgbm gross 0.98 is ~2.3 sd above the random mean; net 0.51 is not distinguishable
