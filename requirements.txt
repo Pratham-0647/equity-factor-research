@@ -6,3 +6,5 @@ statsmodels
 lightgbm
 matplotlib
 pytest
+reportlab
+yfinance
